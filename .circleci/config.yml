@@ -1,0 +1,251 @@
+version: 2.1
+orbs:
+  coveralls: coveralls/coveralls@1.0.6
+  node: circleci/node@1.1.6
+
+workflows:
+  build-test-report:
+    jobs:
+      - checkout_and_install
+      - build:
+          requires:
+            - checkout_and_install
+      - lint:
+          requires:
+            - build
+      #- certora:
+      #    requires:
+      #      - coverage
+      - size-check:
+          requires:
+            - build
+      - unit-test:
+          requires:
+            - build
+      - integration-test:
+          requires:
+            - build
+      # - e2e-test:
+      #     context: COVERALLS_REPO_TOKEN
+      #     requires:
+      #       - build
+      - coverage:
+          context: COVERALLS_REPO_TOKEN
+          requires:
+            - unit-test
+            - integration-test
+      - gas-report:
+          context: COVERALLS_REPO_TOKEN
+          requires:
+            - unit-test
+
+jobs:
+
+  checkout_and_install:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: Install packages
+          command: npm install
+      - save_cache: 
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+      - save_cache:
+          key: gamma-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/gammaprotocol
+
+  lint:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: gamma-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Lint Contracts
+          command: npm run lint:sol
+      - run:
+          name: Lint typescript
+          command: npm run lint:tests
+
+  build:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: gamma-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Install packages
+          command: npm install
+      - run:
+          name: Build Contracts
+          command: npm run build
+      - save_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/gammaprotocol
+  
+  certora:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/openjdk:11-jdk-node
+    steps:
+      - restore_cache:
+          key: gamma-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Certora dependencies
+          command: |
+            echo "export PATH=$PATH:~/.local/bin" >> $BASH_ENV
+            sudo apt-get update || sudo apt-get update
+            sudo apt-get install -y software-properties-common
+            sudo apt-get install python3-pip
+            pip3 install certora-cli
+            wget https://github.com/ethereum/solidity/releases/download/v0.6.10/solc-static-linux
+            chmod +x solc-static-linux
+            sudo mv solc-static-linux /usr/bin/solc
+            chmod -R +x specs/
+      - run:
+          name: Apply harnesses
+          command: |
+            ./specs/scripts/applyHarnesses.sh
+
+      - run:
+          name: Test Whitelist privileged ops
+          command: |
+            ./specs/scripts/runPrivilegedWhitelist.sh
+      - run:
+          name: Test MarginVault
+          command: |
+            ./specs/scripts/runMarginVault.sh
+
+      - run:
+          name: Test no Bankruptcy
+          command: |
+            ./specs/scripts/runNoBankruptcy.sh putOptionsPreExpiryCase1StartingWithAllCases
+            ./specs/scripts/runNoBankruptcy.sh putOptionsPreExpiryCase2StartingWithAllCases
+            ./specs/scripts/runNoBankruptcy.sh callOptionsPreExpiry
+
+      - run:
+          name: Test valid balances
+          command: |
+            ./specs/scripts/runValidBalances.sh validBalanceTotalCollateral
+            ./specs/scripts/runValidBalances.sh validBalanceTotalShort
+            ./specs/scripts/runValidBalances.sh validBalanceTotalLong
+
+      - run:
+          name: Test general rules
+          command: |
+            ./specs/scripts/runValidBalances.sh cantSettleUnexpiredVault
+            ./specs/scripts/runValidBalances.sh validBalanceOfTheSystem
+            ./specs/scripts/runValidBalances.sh assetIsNotOtoken
+            ./specs/scripts/runValidBalances.sh OtokenInVaultIsWhitelisted
+            ./specs/scripts/runValidBalances.sh onlyValidOtoken
+            ./specs/scripts/runController.sh onlyOneVaultModified
+
+  size-check:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+    steps:
+      - restore_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Check Contracts Size
+          command: npm run contract-size
+
+  unit-test:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+      - image: trufflesuite/ganache-cli:v6.10.1
+        command: ganache-cli -d --port 8545 --defaultBalanceEther 500
+    steps:
+      - restore_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Contracts Unit Tests 
+          command: npm run ci:test:unit
+      - save_cache:
+          key: gas-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/gammaprotocol/gasReporterOutput.json
+
+  integration-test:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+      - image: trufflesuite/ganache-cli:v6.10.1
+        command: ganache-cli -d --port 8545 --defaultBalanceEther 500
+    steps:
+      - restore_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Contracts Integration Tests 
+          command: npm run ci:test:integration
+      - save_cache:
+          key: gas-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/gammaprotocol/gasReporterOutput.json
+
+  e2e-test:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+    steps:
+      - restore_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Set Env Variables
+          command: echo "export INFURA_KEY=${INFURA_KEY}" >> $BASH_ENV
+      - run:
+          name: Mainnet E2E Test 
+          command: |
+            ./ci/e2e.sh	
+      - save_cache:
+          key: gas-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/gammaprotocol/gasReporterOutput.json
+
+  gas-report:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+      - image: trufflesuite/ganache-cli:v6.10.1
+    steps:
+      - restore_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+      - restore_cache:
+          key: gas-{{ .Environment.CIRCLE_SHA1 }}
+      - run: 
+          name: Gas Reporter
+          command: npx codechecks
+
+  coverage:
+    working_directory: ~/gammaprotocol
+    docker:
+      - image: circleci/node:10.18.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: gamma-contracts-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Produce Coverage Report
+          command: npm run coverage
+      - coveralls/upload:
+          path_to_lcov: ./coverage/lcov.info
+      - store_artifacts:
+          path: /coverage
+      - store_artifacts:
+          path: /coverage.json
+      - store_artifacts:
+          path: test-results.xml
