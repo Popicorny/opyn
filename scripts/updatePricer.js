@@ -1,20 +1,45 @@
+const helpers = require("./helpers/getGasPrice")
 const yargs = require('yargs')
+const ethers = require('ethers')
 
-const Token = artifacts.require('ChainLinkPricer.sol')
+const Pricer = artifacts.require('ChainLinkPricer.sol')
+const Aggregator = artifacts.require('AggregatorInterface.sol')
+const { parseUnits } = ethers.utils
+const { getGasPrice } = helpers
 
 module.exports = async function(callback) {
   try {
     const options = yargs
       .usage('Usage: --network <network>')
       .option('network', {describe: 'Network name', type: 'string', demandOption: true})
-      .option('gasPrice', {describe: 'Gas price in WEI', type: 'string', demandOption: false}).argv
-      .option('gasPrice', {describe: 'Gas price in WEI', type: 'string', demandOption: false}).argv
+      .option('pricer', {describe: 'Pricer address', type: 'string', demandOption: true}).argv
 
     console.log(`Executing transaction on ${options.network} 🍕`)
+      
+    let gasPrice;
+    if (options.network === "mainnet") {
+      gasPrice = (await getGasPrice()).add(parseUnits("20", "gwei"));
+    } else {
+      gasPrice = parseUnits("20", "gwei");
+    }
+    const pricer = await Pricer.at(options.pricer)
+    const aggregatorAddress = await pricer.aggregator()
+    const aggregator = await Aggregator.at(aggregatorAddress)
 
-    const token = await Token.at('0xA1198a6397C22A4fDC5CA3EeeF3bBb2a7eFAD5C6')
+    const today = new Date();   
+    const nowUtc =  new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), today.getUTCHours(), today.getUTCMinutes(), today.getUTCSeconds()));
+    nowUtc.setUTCHours(8)
+    nowUtc.setUTCMinutes(5)
+    nowUtc.setUTCSeconds(0)
+    
+    let round = await aggregator.latestRoundData()
+    while(parseFloat(round.startedAt) < parseFloat(Date.parse(nowUtc) / 1000)) {
+      round = await aggregator.latestRoundData()
+      console.log(parseFloat(round.startedAt))
+      await new Promise(resolve => setTimeout(resolve, 60000));
+    }
 
-    const tx = await token.setExpiryPriceInOracle('1639036800', '36893488147419111578', {gasPrice: options.gasPrice})
+    const tx = await pricer.setExpiryPriceInOracle(Date.parse(nowUtc) / 1000, round.roundId, {gasPrice: gasPrice, gasLimit: 1000000})
   
     console.log('Done! 🎉')
     console.log(

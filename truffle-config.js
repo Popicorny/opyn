@@ -59,7 +59,7 @@ module.exports = {
   plugins: ['solidity-coverage', 'truffle-contract-size', 'truffle-plugin-verify'],
 
   api_keys: {
-    etherscan: process.env.etherscan,
+    etherscan: process.env.ETHERSCAN_API_KEY,
   },
 
   compilers: {
