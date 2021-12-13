@@ -40,7 +40,8 @@ module.exports = async function(callback) {
     }
 
     const tx = await pricer.setExpiryPriceInOracle(Date.parse(nowUtc) / 1000, round.roundId, {gasPrice: gasPrice, gasLimit: 1000000})
-  
+    await tx.wait(1)
+
     console.log('Done! 🎉')
     console.log(
       `At TX hash ${tx.tx}`,
