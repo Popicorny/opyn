@@ -35,13 +35,12 @@ module.exports = async function(callback) {
     let round = await aggregator.latestRoundData()
     while(parseFloat(round.startedAt) < parseFloat(Date.parse(nowUtc) / 1000)) {
       round = await aggregator.latestRoundData()
-      console.log(parseFloat(round.startedAt))
       await new Promise(resolve => setTimeout(resolve, 60000));
     }
 
+    nowUtc.setUTCMinutes(0)
     const tx = await pricer.setExpiryPriceInOracle(Date.parse(nowUtc) / 1000, round.roundId, {gasPrice: gasPrice, gasLimit: 1000000})
-    await tx.wait(1)
-
+    
     console.log('Done! 🎉')
     console.log(
       `At TX hash ${tx.tx}`,

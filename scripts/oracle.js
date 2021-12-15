@@ -23,10 +23,10 @@ module.exports = async function(callback) {
     }
     const oracle = await Oracle.at(options.oracle)
     
-    console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639123200')).toString())
-    console.log((await oracle.isDisputePeriodOver('0xcbD2c857c1ab9C4A31Ed7bf05713625C8EF8ef04', '1639123200')).toString())
-    console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639123200')).toString())
-    console.log((await oracle.getExpiryPrice('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639123200'))[0].toString())
+    console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500')).toString())
+    console.log((await oracle.isDisputePeriodOver('0xcbD2c857c1ab9C4A31Ed7bf05713625C8EF8ef04', '1639555500')).toString())
+    console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500')).toString())
+    console.log((await oracle.getExpiryPrice('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500'))[0].toString())
 
     /*
     oracle.isDisputePeriodOver(_underlying, _expiry) &&
