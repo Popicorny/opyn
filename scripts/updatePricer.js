@@ -29,7 +29,7 @@ module.exports = async function(callback) {
     const today = new Date();   
     const nowUtc =  new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), today.getUTCHours(), today.getUTCMinutes(), today.getUTCSeconds()));
     nowUtc.setUTCHours(8)
-    nowUtc.setUTCMinutes(5)
+    nowUtc.setUTCMinutes(0)
     nowUtc.setUTCSeconds(0)
     
     let round = await aggregator.latestRoundData()
@@ -37,8 +37,7 @@ module.exports = async function(callback) {
       round = await aggregator.latestRoundData()
       await new Promise(resolve => setTimeout(resolve, 60000));
     }
-
-    nowUtc.setUTCMinutes(0)
+    
     const tx = await pricer.setExpiryPriceInOracle(Date.parse(nowUtc) / 1000, round.roundId, {gasPrice: gasPrice, gasLimit: 1000000})
     
     console.log('Done! 🎉')

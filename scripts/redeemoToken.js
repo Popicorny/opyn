@@ -44,17 +44,17 @@ module.exports = async function(callback) {
         owner: ZERO_ADDR,
         secondAddress: redeemer,
         asset: options.otoken,
-        amount: balance,
+        amount: balance.toString(),
         vaultId: '0',
         index: '0',
         data: ZERO_ADDR
       },
     ]
+
     // const tx1 = await controllerProxy.setOperator("0xd65074D8a1951ECF20D852d1A64F49596A7c8104", true, { gasPrice: "20000000000" })
     // console.log(tx1.tx)
     
     const tx = await controllerProxy.operate(actionArgs, { from: redeemer, gasPrice: gasPrice, gasLimit: 1000000 })
-    await tx.wait(1)
     /*
     const provider = new ethers.providers.JsonRpcProvider('')
     const signer = ethers.Wallet.fromMnemonic("", "m/44'/60'/0'/0/0")
