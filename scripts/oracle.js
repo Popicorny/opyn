@@ -9,8 +9,10 @@ const { getGasPrice } = helpers
 module.exports = async function(callback) {
   try {
     const options = yargs
-      .usage('Usage: --network <network>')
+      .usage('Usage: --network <network> --oracle <oracle> --asset <asset> --expiry <expiry>')
+      .option('expiry', {describe: 'Expiry', type: 'string', demandOption: true})
       .option('network', {describe: 'Network name', type: 'string', demandOption: true})
+      .option('asset', {describe: 'Asset Address', type: 'string', demandOption: true})
       .option('oracle', {describe: 'Oracle address', type: 'string', demandOption: true}).argv
 
     console.log(`Executing transaction on ${options.network} 🍕`)
@@ -21,13 +23,14 @@ module.exports = async function(callback) {
     } else {
       gasPrice = parseUnits("20", "gwei");
     }
+
     const oracle = await Oracle.at(options.oracle)
     
-    console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500')).toString())
-    console.log((await oracle.isDisputePeriodOver('0xcbD2c857c1ab9C4A31Ed7bf05713625C8EF8ef04', '1639555500')).toString())
-    console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500')).toString())
-    console.log((await oracle.getExpiryPrice('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500'))[0].toString())
-
+    // console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500')).toString())
+    // console.log((await oracle.isDisputePeriodOver('0xcbD2c857c1ab9C4A31Ed7bf05713625C8EF8ef04', '1639555500')).toString())
+    // console.log((await oracle.isDisputePeriodOver('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500')).toString())
+    // console.log((await oracle.getExpiryPrice('0xB875937e75dB003F1E43d0733173E642A1f65d45', '1639555500'))[0].toString())
+    console.log((await oracle.getExpiryPrice(options.asset, options.expiry))[0] / 100000000)
     /*
     oracle.isDisputePeriodOver(_underlying, _expiry) &&
     oracle.isDisputePeriodOver(_strike, _expiry) &&

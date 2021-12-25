@@ -33,7 +33,7 @@ module.exports = async function(callback) {
 
     // const signer = ethers.Wallet.fromMnemonic(mnemonic, path);
     const redeemer = "0xd65074D8a1951ECF20D852d1A64F49596A7c8104"
-    
+     
     const erc20 = await Erc20.at(options.otoken)
     const balance =  await erc20.balanceOf(redeemer)
     const controllerProxy = await Controller.at(options.controller)
