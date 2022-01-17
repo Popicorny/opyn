@@ -18,10 +18,7 @@ module.exports = async function(callback) {
 
     console.log(`Deploying chainlink pricer contract on ${options.network} 🍕`)
 
-    const tx = await ChainlinkPricer.new(options.bot, options.asset, options.aggregator, options.oracle, {
-      gasPrice: options.gasPrice,
-      gas: options.gasLimit,
-    })
+    const tx = await ChainlinkPricer.new(options.bot, options.asset, options.aggregator, options.oracle)
 
     console.log('Chainlink pricer deployed! 🎉')
     console.log(`Transaction hash: ${tx.transactionHash}`)

@@ -9,17 +9,20 @@ const MarginPool = artifacts.require('MarginPool')
 const MarginCalculator = artifacts.require('MarginCalculator')
 const AddressBook = artifacts.require('AddressBook')
 const Controller = artifacts.require('Controller')
+const ChainlinkPricer = artifacts.require('ChainlinkPricer.sol')
 
 module.exports = async function(deployer, network, accounts) {
   const [deployerAddress] = accounts
 
   // deploy AddressBook & transfer ownership
+  /*
   await deployer.deploy(AddressBook, {from: deployerAddress})
   const addressbook = await AddressBook.deployed()
 
   // deploy OtokenFactory & set address
   await deployer.deploy(OtokenFactory, addressbook.address, {from: deployerAddress})
   const otokenFactory = await OtokenFactory.deployed()
+
   await addressbook.setOtokenFactory(otokenFactory.address, {from: deployerAddress})
 
   // deploy Otoken implementation & set address
@@ -45,6 +48,7 @@ module.exports = async function(deployer, network, accounts) {
   // deploy Calculator module & set address
   await deployer.deploy(MarginCalculator, oracle.address, {from: deployerAddress})
   const calculator = await MarginCalculator.deployed()
+
   await addressbook.setMarginCalculator(calculator.address, {from: deployerAddress})
 
   // deploy Controller & set address
@@ -54,4 +58,12 @@ module.exports = async function(deployer, network, accounts) {
   await deployer.deploy(Controller, {from: deployerAddress})
   const controller = await Controller.deployed()
   await addressbook.setController(controller.address, {from: deployerAddress})
+
+  */
+  
+  await deployer.deploy(ChainlinkPricer, 
+    '0xd65074D8a1951ECF20D852d1A64F49596A7c8104', 
+    '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
+    '0xb6604488dd755d5aa1ae565b1b5f90d0d891ab9d', {from: deployerAddress})
 }

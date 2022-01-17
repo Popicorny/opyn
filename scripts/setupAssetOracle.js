@@ -24,13 +24,13 @@ module.exports = async function(callback) {
 
     // set up the oracle
     // deply mock pricer (to get live price and set expiry price)
-    await oracle.setAssetPricer(options.asset, options.pricer)
+    // await oracle.setAssetPricer(options.asset, options.pricer)
 
     const lockingPeriod = 300 // Lock 5 minutes. Will wait 5 minutes then receive price update
     const disputePeriod = 7200 // Dispute 120 minutes. After price submitted by pricer, dispute period when disputer can come in to override
     // After dispute period, all price finalized
-    await oracle.setLockingPeriod(options.pricer, lockingPeriod)
-    await oracle.setDisputePeriod(options.pricer, disputePeriod)
+   //  await oracle.setLockingPeriod(options.pricer, lockingPeriod)
+   //  await oracle.setDisputePeriod(options.pricer, disputePeriod)
 
     // set USDC stable price in oracle
     if(options.stable){
